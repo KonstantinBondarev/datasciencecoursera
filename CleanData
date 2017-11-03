@@ -1,1 +1,41 @@
+filepathtest- path to testfolder
+filepathtrain- path to trainfolder
+filepath- path to main folder
 
+main_data_test- names of the test files needed
+main_data_train- names of the train files needed
+
+activityLabels - the activity labels from the labels file
+activityLabels[,2]- the activity names
+features <- the features from features file
+features[,2] <- the features names
+
+# Regex for mean and standard deviation
+featuresWanted <- grep(".*mean.*|.*std.*", features[,2])
+featuresWanted.names <- features[featuresWanted,2]
+featuresWanted.names = gsub('-mean', 'Mean', featuresWanted.names)
+featuresWanted.names = gsub('-std', 'Std', featuresWanted.names)
+featuresWanted.names <- gsub('[-()]', '', featuresWanted.names)
+
+
+# Load the datasets
+train <- read.table(paste(filepathtrain,main_data_train[2],sep=""))[featuresWanted]
+train.activities <- read.table(paste(filepathtrain,main_data_train[3],sep=""))
+train.subjects <- read.table(paste(filepathtrain,main_data_train[1],sep=""))
+train <- cbind(train.subjects, train.activities, train)
+
+test <- read.table(paste(filepathtest,main_data_test[2],sep=""))[featuresWanted]
+test.activities <- read.table(paste(filepathtest,main_data_test[3],sep=""))
+test.subjects <- read.table(paste(filepathtest,main_data_test[1],sep=""))
+test <- cbind(test.subjects, test.activities, test)
+
+# merge datasets and add labels
+allData <- rbind(train, test)
+colnames(allData) <- c("subject", "activity", featuresWanted.names)
+
+# turn activities & subjects into factors
+allData$activity <- factor(allData$activity, levels = activityLabels[,1], labels = activityLabels[,2])
+allData$subject <- as.factor(allData$subject)
+
+allData.melted <- melt(allData, id = c("subject", "activity"))
+allData.mean <- dcast(allData.melted, subject + activity ~ variable, mean)
